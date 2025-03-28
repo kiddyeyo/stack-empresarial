@@ -1,5 +1,5 @@
 .env
-
+nginx-conf/default.conf
 docker-compose.override.yml
 
 # Ignorar logs y bases de datos exportadas
