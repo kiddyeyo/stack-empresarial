@@ -1,0 +1,7 @@
+.env
+backups/*
+odoo-logs/*
+fail2ban/data/db/*
+netdata/*
+certbot-renew.log
+docker-compose.override.yml

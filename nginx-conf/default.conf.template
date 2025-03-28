@@ -1,0 +1,56 @@
+upstream wordpress {
+    server wordpress:80;
+}
+
+upstream odoo {
+    server odoo:8069;
+}
+
+map $host $upstream {
+    default                  backend;
+    www.${DOMAIN}            wordpress;
+    ${DOMAIN}                wordpress;
+    odoo.${DOMAIN}           odoo;
+}
+
+server {
+    listen 80;
+    server_name www.${DOMAIN} ${DOMAIN} odoo.${DOMAIN} ${LOCAL_IP};
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        try_files $uri =404;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name www.${DOMAIN} ${DOMAIN} odoo.${DOMAIN} ${LOCAL_IP};
+
+    ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    include /etc/nginx/conf.d/options-ssl-nginx.conf;
+
+    location ~* ^/(wp-login\.php|wp-admin/) {
+        proxy_pass http://wordpress;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://$upstream;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_request_buffering off;
+    }
+}
+

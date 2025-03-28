@@ -1,0 +1,122 @@
+
+services:
+
+  db_wordpress:
+    image: mysql:8.4.4
+    container_name: db_wordpress
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - db_wordpress_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  wordpress:
+    depends_on:
+      - db_wordpress
+    image: wordpress:php8.1-apache
+    container_name: wordpress
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - WORDPRESS_DB_HOST=db_wordpress:3306
+      - WORDPRESS_DB_USER=${MYSQL_USER}
+      - WORDPRESS_DB_PASSWORD=${MYSQL_PASSWORD}
+      - WORDPRESS_DB_NAME=${MYSQL_DATABASE}
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - app-network
+
+  db_odoo:
+    image: postgres:17.4
+    container_name: db_odoo
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - db_odoo_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  odoo:
+    depends_on:
+      - db_odoo
+    image: odoo:latest
+    container_name: odoo
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - HOST=db_odoo
+      - USER=${POSTGRES_USER}
+      - PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "8069:8069"
+    volumes:
+      - odoo_data:/var/lib/odoo
+      - ./odoo.conf:/etc/odoo/odoo.conf
+      - ./odoo-logs:/var/log/odoo         # <-- este es el nuevo volumen
+    networks:
+      - app-network
+
+  webserver:
+    depends_on:
+      - wordpress
+      - odoo
+    image: nginx:1.26.3
+    container_name: webserver
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./nginx-conf:/etc/nginx/conf.d
+      - certbot-etc:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    networks:
+      - app-network
+
+  certbot:
+    depends_on:
+      - webserver
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email castilloerick208@gmail.com --agree-tos --no-eff-email -d erickhomelab.org -d www.erickhomelab.org -d odoo.erickhomelab.org
+    networks:
+      - app-network
+
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name: fail2ban
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./odoo-logs:/data/odoo-logs:ro  # <- para leer logs de odoo
+      - ./fail2ban/data:/data
+    network_mode: host
+
+volumes:
+  certbot-etc:
+  certbot-webroot:
+  wordpress_data:
+  db_wordpress_data:
+  db_odoo_data:
+  odoo_data:
+
+networks:
+  app-network:
+    driver: bridge
