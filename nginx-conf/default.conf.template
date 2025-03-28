@@ -53,4 +53,3 @@ server {
         proxy_request_buffering off;
     }
 }
-
