@@ -1,7 +1,16 @@
 .env
-backups/*
-odoo-logs/*
-fail2ban/data/db/*
-netdata/*
-certbot-renew.log
+
 docker-compose.override.yml
+
+# Ignorar logs y bases de datos exportadas
+*.log
+*.sql
+*.tar.gz
+*.sqlite3
+
+# Ignorar solo el contenido de mysql y postgres
+backups/mysql/*
+backups/postgres/*
+
+# Ignorar odoo.conf del root
+/proyectos/odoo.conf
