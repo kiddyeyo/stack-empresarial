@@ -1,15 +1,17 @@
 #!/bin/bash
+set -e
+
+# Cargar variables desde el .env
+source "$(dirname "$0")/../../.env"
 
 DATE=$(date +%F_%H-%M-%S)
 BACKUP_DIR=~/proyectos/backups/mysql
 CONTAINER=db_wordpress
-DB=wordpress
-USER=erickcastillo
-PASSWORD=Papayaxd2312
-WEBHOOK_URL="https://discord.com/api/webhooks/1354553827482927104/gbmxxqFnmHgKOWL2DDCxUm-L1i02J082tVNYF_qG4VroDzP48qCTtkWNBz35HB_Ow9mR"
 
-docker exec $CONTAINER mysqldump --no-tablespaces -u $USER -p$PASSWORD $DB > $BACKUP_DIR/wordpress_db_$DATE.sql
+# Realizar el backup
+docker exec -e MYSQL_PWD=$MYSQL_PASSWORD $CONTAINER mysqldump -u $MYSQL_USER $MYSQL_DATABASE > $BACKUP_DIR/wordpress_db_$DATE.sql
 
+# Verificar resultado
 if [ $? -eq 0 ]; then
     tar -czf $BACKUP_DIR/wordpress_db_$DATE.tar.gz -C $BACKUP_DIR wordpress_db_$DATE.sql
     rm $BACKUP_DIR/wordpress_db_$DATE.sql
