@@ -12,6 +12,9 @@ Este repositorio contiene un stack Docker que incluye:
 
 \> \*\*Importante:\*\* antes de iniciar el servidor por primera vez, debes seguir estos pasos para emitir los certificados SSL correctamente usando el entorno de \*\*staging\*\* de Let's Encrypt.
 
+Antes que nada corre
+envsubst < nginx-conf/default.conf.template > nginx-conf/default.conf
+
 \#\#\# 1\. Modificar \`docker-compose.yml\`
 
 Ubica el servicio \`certbot:\` y asegúrate que en la línea \`command:\` tenga el flag \`--staging\`. Por ejemplo:
@@ -103,6 +106,27 @@ docker compose up \-d \--force-recreate \--no-deps webserver
 Una vez completado este proceso, tu stack estará corriendo con certificados válidos de Let's Encrypt en producción.
 
 \---
+
+Variables de entorno
+
+Todas las credenciales y configuraciones sensibles están contenidas en el archivo .env. Este archivo no se sube al repositorio por seguridad.
+
+Debes crear un archivo .env en la raíz del proyecto con el siguiente contenido:
+
+MYSQL_DATABASE=
+MYSQL_USER=
+MYSQL_PASSWORD=
+MYSQL_ROOT_PASSWORD=
+
+POSTGRES_DB=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+
+DOMAIN= (sin www. ni otro)
+LOCAL_IP=
+PUBLIC_IP=
+
+WEBHOOK_URL=
 
 \#\# Licencia
 
