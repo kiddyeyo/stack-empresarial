@@ -14,3 +14,4 @@ backups/postgres/*
 
 # Ignorar odoo.conf del root
 /proyectos/odoo.conf
+odoo.conf
