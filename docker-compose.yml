@@ -93,7 +93,8 @@ services:
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-webroot:/var/www/certbot
-    command: certonly --webroot --webroot-path=/var/www/certbot --email castilloerick208@gmail.com --agree-tos --no-eff-email -d erickhomelab.org -d www.erickhomelab.org -d odoo.erickhomelab.org
+    env_file: .env
+    command: certonly --webroot --webroot-path=/var/www/certbot --email ${CERTBOT_EMAIL} --agree-tos --no-eff-email -d ${CERTBOT_DOMAIN1} -d ${CERTBOT_DOMAIN2} -d ${CERTBOT_DOMAIN3}
     networks:
       - app-network
 
