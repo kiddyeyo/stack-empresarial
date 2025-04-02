@@ -1,10 +1,11 @@
 #!/bin/bash
+set +e
 
-WEBHOOK_URL="https://discord.com/api/webhooks/1354553827482927104/gbmxxqFnmHgKOWL2DDCxUm-L1i02J082tVNYF_qG4VroDzP48qCTtkWNBz35HB_Ow9mR"
+source "$(realpath "$(dirname "$0")/.env")"
 DATE=$(date +%F_%H-%M-%S)
 LOGFILE="/tmp/certbot_renew_$DATE.log"
 
-# Ejecutar renovación y guardar salida en variable
+# Ejecutar renovación de certificados
 RENEW_OUTPUT=$(docker run --rm \
   -v certbot-etc:/etc/letsencrypt \
   -v certbot-webroot:/var/www/certbot \
@@ -12,7 +13,7 @@ RENEW_OUTPUT=$(docker run --rm \
 
 echo "$RENEW_OUTPUT" > "$LOGFILE"
 
-# Ver si hubo alguna renovación
+# Evaluar resultado
 if echo "$RENEW_OUTPUT" | grep -q "Congratulations"; then
     MSG="✅ Certbot renovó uno o más certificados exitosamente el $DATE"
 elif echo "$RENEW_OUTPUT" | grep -q "No renewals were attempted"; then
@@ -25,7 +26,11 @@ fi
 curl -H "Content-Type: application/json" \
      -X POST \
      -d "{\"content\": \"$MSG\"}" \
-     $WEBHOOK_URL
+     "$WEBHOOK_URL"
 
-# Recargar nginx de todos modos (solo si está corriendo)
-docker exec webserver nginx -s reload 2>/dev/null
+# Intentar recargar nginx si existe el contenedor
+if docker ps --format '{{.Names}}' | grep -q '^webserver$'; then
+    docker exec webserver nginx -s reload 2>/dev/null
+fi
+
+set -e
